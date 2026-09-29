@@ -47,5 +47,18 @@ test('repeating completion produces one next occurrence even on duplicate saves'
   assert.equal(matches.length,2);
   assert.equal(matches.find(c=>c.status==='open')?.plannedDate,'2026-02-28');
 });
+test('batch archive updates selected cards together and rejects invalid selections',async()=>{
+  const {mutation,readState}=await import('../lib/store');
+  const first=makeCard({title:'Batch first',focus:true}),second=makeCard({title:'Batch second'});
+  await mutation({type:'create',card:first});
+  await mutation({type:'create',card:second});
+  await assert.rejects(mutation({type:'batch-archive',ids:[first.id,'missing']}),/Select active thoughts/);
+  assert.equal((await readState()).cards.find(c=>c.id===first.id)?.status,'open');
+  await mutation({type:'batch-archive',ids:[first.id,second.id]});
+  const state=await readState();
+  assert.equal(state.cards.find(c=>c.id===first.id)?.status,'archived');
+  assert.equal(state.cards.find(c=>c.id===first.id)?.focus,false);
+  assert.equal(state.cards.find(c=>c.id===second.id)?.status,'archived');
+});
 test('iMessage receiver scopes senders and deduplicates repeated webhooks',async()=>{process.env.IMESSAGE_TOKEN='test-token';process.env.IMESSAGE_CHAT_GUID='chat-1';process.env.IMESSAGE_ALLOWED_SENDERS='me@example.com';const {normalizeMessage,checkMessageAccess,receiveMessage}=await import('../lib/imessage');const m=normalizeMessage({guid:'message-1',text:'Idea: a message note',sender:'me@example.com',chatGuid:'chat-1'});assert.throws(()=>checkMessageAccess('wrong',m),/Invalid receiver token/);assert.throws(()=>checkMessageAccess('test-token',{...m,sender:'stranger@example.com'}),/outside/);checkMessageAccess('test-token',m);assert.equal((await receiveMessage(m)).duplicate,false);assert.equal((await receiveMessage(m)).duplicate,true);});
 test('password sessions reject missing credentials and cross-origin writes',async()=>{const {NextRequest}=await import('next/server.js');const {authorize,sessionToken}=await import('../lib/auth');const saved=process.env.APP_PASSWORD;process.env.APP_PASSWORD='unit-test-password';try{assert.throws(()=>authorize(new NextRequest('http://localhost:3000/api/state',{headers:{host:'localhost:3000'}})),/Sign in/);const cookie='daybook_session='+sessionToken(Date.now()+60000);authorize(new NextRequest('http://localhost:3000/api/state',{headers:{host:'localhost:3000',cookie}}));assert.throws(()=>authorize(new NextRequest('http://localhost:3000/api/state',{method:'POST',headers:{host:'localhost:3000',cookie,origin:'https://untrusted.example'}})),/Invalid origin/);authorize(new NextRequest('http://localhost:3000/api/state',{method:'POST',headers:{host:'localhost:3000',cookie,origin:'http://localhost:3000'}}));}finally{if(saved===undefined)delete process.env.APP_PASSWORD;else process.env.APP_PASSWORD=saved;}});

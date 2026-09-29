@@ -19,3 +19,5 @@
 .thought-card{display:flex;flex-direction:column;min-height:360px}
 .thought-card .card-content{flex:1}
 @media(max-width:760px){.card-grid{grid-template-columns:minmax(0,300px);justify-content:center;gap:15px}.thought-card{min-height:390px}}
+
+.sidebar-section-toggle{border:0;background:transparent;padding:0;display:inline-flex;align-items:center;gap:5px;color:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit}.sidebar-section-toggle:hover{color:#444}.batch-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin:-6px 0 20px;background:#f7f7f7;border:1px solid #e8e8e8;border-radius:10px;font-size:13px;color:#666}.batch-toolbar .button:last-child{margin-left:auto}.thought-card.batch-selected,.list-row:has(input[type=checkbox]:checked){border-color:#777;background:#fafafa}.card-top>input[type=checkbox],.list-title>input[type=checkbox]{width:18px;height:18px;flex-shrink:0;accent-color:#555}.filter-tools>.button{min-height:36px}
