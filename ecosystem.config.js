@@ -1,6 +1,6 @@
 // Build first with `npm run build`, then start with `pm2 start ecosystem.config.js`.
 // Next.js loads .env.local from this directory when the server starts.
-const port = process.env.PORT || '3000';
+const port = process.env.PORT || '3200';
 const host = process.env.DAYBOOK_HOST || '127.0.0.1';
 
 if (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
