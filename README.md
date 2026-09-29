@@ -12,7 +12,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://127.0.0.1:3000. Six sample cards demonstrate the views; Settings lets you archive them. SQLite is the default until `DAYBOOK_DATABASE=postgres` is configured. Attachments remain in `data/` with either backend.
+Open http://127.0.0.1:3200. Six sample cards demonstrate the views; Settings lets you archive them. SQLite is the default until `DAYBOOK_DATABASE=postgres` is configured. Attachments remain in `data/` with either backend.
 
 ## What works in this draft
 
@@ -50,7 +50,7 @@ pm2 start ecosystem.config.js
 pm2 logs daybook
 ```
 
-It listens on `127.0.0.1:3000` by default. To use a different port or bind to your LAN, set `PORT` and `DAYBOOK_HOST` when starting PM2, for example `PORT=3000 DAYBOOK_HOST=0.0.0.0 pm2 start ecosystem.config.js`. Set `APP_PASSWORD` before LAN access. `.env.local` is loaded by Next.js from this project directory; `PORT` and `DAYBOOK_HOST` are read by PM2 when it loads the configuration, so put those two in the command or your shell environment. Keep `DAYBOOK_DATA_DIR` on persistent storage (the default is this project's `data/` folder).
+It listens on `127.0.0.1:3200` by default. To use a different port or bind to your LAN, set `PORT` and `DAYBOOK_HOST` when starting PM2, for example `PORT=3201 DAYBOOK_HOST=0.0.0.0 pm2 start ecosystem.config.js`. Set `APP_PASSWORD` before LAN access. `.env.local` is loaded by Next.js from this project directory; `PORT` and `DAYBOOK_HOST` are read by PM2 when it loads the configuration, so put those two in the command or your shell environment. Keep `DAYBOOK_DATA_DIR` on persistent storage (the default is this project's `data/` folder).
 
 After confirming it runs, use `pm2 save` and follow the command printed by `pm2 startup` if you want PM2 to restore it after a reboot. Run PM2 under the same user that owns the project and data. On deployments, run `npm ci`, `npm run build`, then `pm2 restart daybook`; rebuild before restarting because PM2 serves the production build, not the development server. PM2 only supervises Daybook here; BlueBubbles and the optional native reminder worker have their own macOS session requirements.
 
@@ -117,7 +117,7 @@ IMESSAGE_CHAT_GUID=the-exact-approved-chat-guid
 IMESSAGE_ALLOWED_SENDERS=your-approved-phone-or-apple-id-address
 ```
 
-3. Subscribe BlueBubbles to **new-message** webhooks at `http://127.0.0.1:3000/api/imessage?token=YOUR_SECRET` when both run on the Mac. Keep the token private and avoid logging full webhook URLs.
+3. Subscribe BlueBubbles to **new-message** webhooks at `http://127.0.0.1:3200/api/imessage?token=YOUR_SECRET` when both run on the Mac. Keep the token private and avoid logging full webhook URLs.
 4. Supported BlueBubbles shape: `{type:"new-message", data:{guid,text,isFromMe,handle:{address},chats:[{guid}]}}`. The receiver also accepts the normalized payload below, useful if your bridge version requires an adapter.
 
 ```json

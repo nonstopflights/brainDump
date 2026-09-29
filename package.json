@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
+    "dev": "next dev --hostname 127.0.0.1 --port 3200",
     "build": "next build --webpack",
-    "start": "next start --hostname 127.0.0.1",
+    "start": "next start --hostname 127.0.0.1 --port 3200",
     "test": "node --import tsx --test tests/*.test.ts",
     "migrate:postgres": "node --env-file=.env.local --import tsx scripts/migrate-to-postgres.ts"
   },
