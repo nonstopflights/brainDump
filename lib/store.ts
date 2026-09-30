@@ -13,6 +13,10 @@ function normalizeState(body:string|State):State {const state=(typeof body==='st
 function sqliteState():State {const row=database().prepare('SELECT body FROM state WHERE id=1').get() as {body:string};return normalizeState(row.body);}
 let sqliteQueue:Promise<void>=Promise.resolve();
 function withSqliteQueue<T>(work:()=>Promise<T>):Promise<T>{const result=sqliteQueue.then(work,work);sqliteQueue=result.then(()=>{},()=>{});return result;}
+export type StoredAiSettings={api_key:string|null;model:string|null};
+function sqliteAiSettingsDatabase(){const d=database();d.exec('CREATE TABLE IF NOT EXISTS ai_settings (id INTEGER PRIMARY KEY CHECK(id=1), api_key TEXT, model TEXT)');return d;}
+export function readSqliteAiSettings():Promise<StoredAiSettings|undefined>{return withSqliteQueue(async()=>sqliteAiSettingsDatabase().prepare('SELECT api_key,model FROM ai_settings WHERE id=1').get() as StoredAiSettings|undefined);}
+export function writeSqliteAiSettings(patch:{key?:string;model:string}):Promise<void>{return withSqliteQueue(async()=>{sqliteAiSettingsDatabase().prepare('INSERT INTO ai_settings(id,api_key,model) VALUES(1,?,?) ON CONFLICT(id) DO UPDATE SET api_key=COALESCE(excluded.api_key,ai_settings.api_key),model=excluded.model').run(patch.key??null,patch.model);});}
 export async function readState():Promise<State> {if(postgresEnabled){await ensurePostgres();const result=await postgresPool().query<{body:State}>('SELECT body FROM daybook.state WHERE id=1');return normalizeState(result.rows[0].body);}return withSqliteQueue(async()=>sqliteState());}
 export type Transaction={findMessage:(guid:string)=>Promise<string|null>;putMessage:(guid:string,cardId:string)=>Promise<void>};
 export async function transact<T>(fn:(state:State,tx:Transaction)=>T|Promise<T>):Promise<T> {
