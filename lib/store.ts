@@ -1,5 +1,6 @@
 import {DatabaseSync} from 'node:sqlite';
 import {mkdirSync} from 'node:fs';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {demoState} from './demo';
 import {makeCard,localDate,defaultViewPreferences,type State,type Card} from './types';
@@ -25,8 +26,9 @@ export async function transact<T>(fn:(state:State,tx:Transaction)=>T|Promise<T>)
   return withSqliteQueue(async()=>{const d=database();d.exec('BEGIN IMMEDIATE');try{const state=sqliteState();const tx:Transaction={findMessage:async guid=>(d.prepare('SELECT card_id FROM messages WHERE guid=?').get(guid) as {card_id:string}|undefined)?.card_id||null,putMessage:async(guid,cardId)=>{d.prepare('INSERT INTO messages(guid,card_id) VALUES(?,?)').run(guid,cardId);}};const result=await fn(state,tx);state.version++;d.prepare('UPDATE state SET body=? WHERE id=1').run(JSON.stringify(state));d.exec('COMMIT');return result;}catch(error){d.exec('ROLLBACK');throw error;}});
 }
 export type FileRecord={id:string;name:string;type:string;size:number};
-export async function saveFile(record:FileRecord):Promise<void>{if(postgresEnabled){await ensurePostgres();await postgresPool().query('INSERT INTO daybook.files(id,name,type,size) VALUES($1,$2,$3,$4)',[record.id,record.name,record.type,record.size]);return;}await withSqliteQueue(async()=>{database().prepare('INSERT INTO files(id,name,type,size) VALUES(?,?,?,?)').run(record.id,record.name,record.type,record.size);});}
+export async function saveFile(record:FileRecord,content:Buffer):Promise<void>{if(postgresEnabled){await ensurePostgres();await postgresPool().query('INSERT INTO daybook.files(id,name,type,size,content) VALUES($1,$2,$3,$4,$5)',[record.id,record.name,record.type,record.size,content]);return;}await mkdir(path.join(dataDir,'attachments'),{recursive:true});await writeFile(path.join(dataDir,'attachments',record.id),content);await withSqliteQueue(async()=>{database().prepare('INSERT INTO files(id,name,type,size) VALUES(?,?,?,?)').run(record.id,record.name,record.type,record.size);});}
 export async function findFile(id:string):Promise<FileRecord|undefined>{if(postgresEnabled){await ensurePostgres();const result=await postgresPool().query<FileRecord>('SELECT id,name,type,size::integer AS size FROM daybook.files WHERE id=$1',[id]);return result.rows[0];}return withSqliteQueue(async()=>database().prepare('SELECT * FROM files WHERE id=?').get(id) as FileRecord|undefined);}
+export async function readStoredFile(id:string):Promise<{file:FileRecord;data:Buffer}|undefined>{const file=await findFile(id);if(!file)return undefined;if(postgresEnabled){await ensurePostgres();const row=(await postgresPool().query<{content:Buffer|null}>('SELECT content FROM daybook.files WHERE id=$1',[id])).rows[0];if(row?.content)return {file,data:row.content};}return {file,data:await readFile(path.join(dataDir,'attachments',id))};}
 export class HttpError extends Error{constructor(public status:number,message:string){super(message);}}
 export function mutation(action:Record<string,unknown>):Promise<State> {return transact(s=>{const stamp=new Date().toISOString();const find=(id:unknown)=>{const c=s.cards.find(c=>c.id===id);if(!c)throw new HttpError(404,'Thought not found');return c;};
 switch(action.type){

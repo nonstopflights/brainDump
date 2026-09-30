@@ -56,9 +56,9 @@ After confirming it runs, use `pm2 save` and follow the command printed by `pm2 
 
 ### PostgreSQL
 
-Set `DAYBOOK_DATABASE=postgres` in the ignored `.env.local` to use PostgreSQL for journal state, attachment metadata, iMessage deduplication, and delivered-reminder records. Create a dedicated PostgreSQL database owned by the app's database user first. Daybook then creates its own `daybook` schema and tables inside it. Attachment binaries remain under `DAYBOOK_DATA_DIR/attachments` (default `data/attachments`), so keep that directory when moving the app. PostgreSQL client tools are also needed for backups (`pg_dump`) and restores (`pg_restore`).
+Set `DAYBOOK_DATABASE=postgres` in the ignored `.env.local` to use PostgreSQL for journal state, attachment metadata, iMessage deduplication, and delivered-reminder records. Create a dedicated PostgreSQL database owned by the app's database user first. Daybook then creates its own `daybook` schema and tables inside it. New attachment binaries are stored in PostgreSQL alongside attachment metadata. Older attachments stored under `DAYBOOK_DATA_DIR/attachments` remain readable until migrated with `npm run migrate:attachments` on the server that holds those files. If the files are elsewhere, set `DAYBOOK_LEGACY_ATTACHMENTS_DIR` to their directory for that command. The migration verifies every file before writing to PostgreSQL and leaves the originals in place. PostgreSQL client tools are also needed for backups (`pg_dump`) and restores (`pg_restore`).
 
-For PostgreSQL on the same Mac as Daybook, use values like these in the server's `.env.local`:
+For PostgreSQL on the same Mac as Daybook, use `PGHOST=127.0.0.1` and `PGPORT=5432` in the server's `.env.local` (adjust the port if PostgreSQL listens elsewhere):
 
 ```dotenv
 DAYBOOK_DATABASE=postgres
@@ -84,7 +84,7 @@ node --env-file=.env.local scripts/backup.mjs
 npm run migrate:postgres
 ```
 
-The migration command uses the `PG*` or `DATABASE_URL` connection values even while `DAYBOOK_DATABASE=sqlite`. It copies cards, tags, settings, iMessage deduplication records, attachment metadata, and delivered-reminder records. It refuses to overwrite a populated Daybook PostgreSQL schema and leaves SQLite unchanged. If the SQLite file is elsewhere, set `DAYBOOK_SQLITE_SOURCE` to its absolute path. When importing on another machine, copy its `attachments/` directory too. After migration, set `DAYBOOK_DATABASE=postgres`, run `npm run build`, and restart Daybook with PM2. Take a new PostgreSQL backup after verifying the migrated journal.
+The migration command uses the `PG*` or `DATABASE_URL` connection values even while `DAYBOOK_DATABASE=sqlite`. It copies cards, tags, settings, iMessage deduplication records, attachment metadata, and delivered-reminder records. It refuses to overwrite a populated Daybook PostgreSQL schema and leaves SQLite unchanged. If the SQLite file is elsewhere, set `DAYBOOK_SQLITE_SOURCE` to its absolute path. When importing on another machine, copy its `attachments/` directory too. After migration, set `DAYBOOK_DATABASE=postgres`, run `npm run build`, and restart Daybook with PM2. New attachments are stored in PostgreSQL. For attachments already recorded in an existing PostgreSQL deployment, run `npm run migrate:attachments` on the server with the legacy files. Take a new PostgreSQL backup after verifying the migrated journal.
 
 This is a single-user draft. It has no multi-user permissions, offline editing/sync, collaborative editor, or calendar conflict detection. Save failures are shown and the editor stays open. Separate browser editors use optimistic update timestamps to reject stale saves.
 
@@ -104,7 +104,7 @@ For broader interpretation, configure an **OpenAI-compatible** chat endpoint usi
 
 ## Optional OpenAI summaries
 
-Set `OPENAI_API_KEY` in the ignored `.env.local` and restart Daybook to enable the editor’s **Summarize with OpenAI** button. `OPENAI_SUMMARY_MODEL` defaults to `gpt-5.4-nano`. The button sends the current note text to OpenAI only when clicked; pasted images remain on your server. Without a key, Daybook still makes a short local summary from the note text.
+Enter your OpenAI API key and summary model in **Settings → OpenAI summaries** to enable the editor’s **Summarize with OpenAI** button. Settings changes take effect immediately. The key is kept in the PostgreSQL `daybook.ai_settings` table, is never returned to the browser, and is included in PostgreSQL backups. Protect those backup files as secrets. `OPENAI_API_KEY` and `OPENAI_SUMMARY_MODEL` in `.env.local` remain optional fallback values until overridden in Settings. The default model is `gpt-5.4-nano`. The button sends the current note text to OpenAI only when clicked; pasted images remain on your server. Without a key, Daybook still makes a short local summary from the note text.
 
 ## iMessage on your Mac
 
@@ -154,7 +154,7 @@ Run the app once before starting the worker so the database exists. Notification
 node --env-file=.env.local scripts/backup.mjs
 ```
 
-With SQLite, this creates a consistent SQLite snapshot. With PostgreSQL, it uses `pg_dump` to archive only the `daybook` schema. Both modes include attachment files from `DAYBOOK_DATA_DIR/attachments` (by default, `data/attachments`) in a dated `backups/` folder. Backups run only when you invoke this script; Daybook does not schedule or copy them offsite. Store backups on another disk or system. To restore, stop the app and reminder worker; use the bundled `RESTORE.txt` for the chosen backend and restore attachments to the same data directory. Keep `.env.local` backed up separately. JSON export is useful for inspection and portability but contains attachment references rather than the files themselves. Import replaces the current journal after an explicit warning.
+With SQLite, this creates a consistent SQLite snapshot. With PostgreSQL, it uses `pg_dump` to archive only the `daybook` schema. PostgreSQL backups include new attachment binaries and the OpenAI key. SQLite backups include attachment files from `DAYBOOK_DATA_DIR/attachments` (by default, `data/attachments`). Backups run only when you invoke this script; Daybook does not schedule or copy them offsite. Store backups on another disk or system. To restore, stop the app and reminder worker; use the bundled `RESTORE.txt` for the chosen backend and restore attachments to the same data directory. Keep `.env.local` backed up separately. JSON export is useful for inspection and portability but contains attachment references rather than the files themselves. Import replaces the current journal after an explicit warning.
 
 ## Validation
 

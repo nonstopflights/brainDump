@@ -17,7 +17,7 @@ if(process.env.DAYBOOK_DATABASE==='postgres'){
 }
 try{await cp(path.join(source,'attachments'),path.join(destination,'attachments'),{recursive:true,errorOnExist:true});}catch(e){if(e.code!=='ENOENT')throw e;}
 const restore=process.env.DAYBOOK_DATABASE==='postgres'
-  ? 'Stop Daybook and reminders before restoring. Restore daybook.pg.dump into the intended PostgreSQL database with pg_restore (the archive contains only the daybook schema). Restore attachments into DAYBOOK_DATA_DIR/attachments. Restart Daybook. Check the target database carefully before using --clean. .env.local is not included.\n'
+  ? 'Stop Daybook and reminders before restoring. Restore daybook.pg.dump into the intended PostgreSQL database with pg_restore (the archive contains only the daybook schema). New attachments and OpenAI settings are in the PostgreSQL dump. Restore the attachments folder only for legacy file-backed records. Protect the dump because it contains the API key if configured. Restart Daybook. Check the target database carefully before using --clean. .env.local is not included.\n'
   : 'Stop Daybook before restoring. Replace the contents of its data directory with daybook.sqlite and attachments from this backup. Remove old daybook.sqlite-wal and daybook.sqlite-shm files while the app is stopped. Restart Daybook. Your app password and integration configuration live in .env.local and are not included.\n';
 await writeFile(path.join(destination,'RESTORE.txt'),restore);
 console.log('Backup saved to '+destination);

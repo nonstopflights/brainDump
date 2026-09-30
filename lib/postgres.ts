@@ -22,7 +22,9 @@ export async function ensurePostgres():Promise<void> {
         await client.query('CREATE SCHEMA IF NOT EXISTS daybook');
         await client.query('CREATE TABLE IF NOT EXISTS daybook.state (id integer PRIMARY KEY CHECK (id = 1), body jsonb NOT NULL)');
         await client.query('CREATE TABLE IF NOT EXISTS daybook.messages (guid text PRIMARY KEY, card_id text NOT NULL)');
-        await client.query('CREATE TABLE IF NOT EXISTS daybook.files (id text PRIMARY KEY, name text NOT NULL, type text NOT NULL, size integer NOT NULL)');
+        await client.query('CREATE TABLE IF NOT EXISTS daybook.files (id text PRIMARY KEY, name text NOT NULL, type text NOT NULL, size integer NOT NULL, content bytea)');
+        await client.query('ALTER TABLE daybook.files ADD COLUMN IF NOT EXISTS content bytea');
+        await client.query('CREATE TABLE IF NOT EXISTS daybook.ai_settings (id integer PRIMARY KEY CHECK (id = 1), api_key text, model text)');
         await client.query('CREATE TABLE IF NOT EXISTS daybook.delivered_reminders (key text PRIMARY KEY)');
         await client.query('INSERT INTO daybook.state (id,body) VALUES (1,$1::jsonb) ON CONFLICT (id) DO NOTHING',[JSON.stringify(demoState())]);
         await client.query('COMMIT');

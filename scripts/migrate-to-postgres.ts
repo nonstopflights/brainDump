@@ -1,5 +1,5 @@
 import {DatabaseSync} from 'node:sqlite';
-import {access,cp,mkdir} from 'node:fs/promises';
+import {access,readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {dataDir} from '../lib/store';
 import {ensurePostgres,postgresPool} from '../lib/postgres';
@@ -34,13 +34,9 @@ try {
       throw new Error('PostgreSQL already has Daybook data. Migration will not overwrite it.');
     }
 
-    if(files.length&&sourceDir!==path.resolve(dataDir)){
-      await mkdir(path.join(dataDir,'attachments'),{recursive:true});
-      await cp(path.join(sourceDir,'attachments'),path.join(dataDir,'attachments'),{recursive:true,force:false,errorOnExist:true});
-    }
     await client.query('UPDATE daybook.state SET body=$1::jsonb WHERE id=1',[JSON.stringify(state)]);
     for(const message of messages)await client.query('INSERT INTO daybook.messages(guid,card_id) VALUES($1,$2)',[message.guid,message.card_id]);
-    for(const file of files)await client.query('INSERT INTO daybook.files(id,name,type,size) VALUES($1,$2,$3,$4)',[file.id,file.name,file.type,file.size]);
+    for(const file of files)await client.query('INSERT INTO daybook.files(id,name,type,size,content) VALUES($1,$2,$3,$4,$5)',[file.id,file.name,file.type,file.size,await readFile(path.join(sourceDir,'attachments',file.id))]);
     for(const reminder of delivered)await client.query('INSERT INTO daybook.delivered_reminders(key) VALUES($1)',[reminder.key]);
     await client.query('COMMIT');
     console.log(`Migrated ${state.cards.length} cards, ${state.tags.length} tags, ${messages.length} iMessage records, ${files.length} attachments, and ${delivered.length} delivered reminders.`);

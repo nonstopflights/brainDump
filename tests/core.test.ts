@@ -29,6 +29,7 @@ test('SQLite mutations merge tags without duplicating cards and reject stale edi
   assert.equal(state.cards.find(c=>c.id===a.id)?.history.length,1);
   assert.equal(state.cards.find(c=>c.id===a.id)?.plannedDate,'2026-10-01');
 });
+test('SQLite attachment fallback saves and reads file bytes',async()=>{const {saveFile,readStoredFile}=await import('../lib/store');const id=crypto.randomUUID();await saveFile({id,name:'test.png',type:'image/png',size:3},Buffer.from([1,2,3]));const result=await readStoredFile(id);assert.equal(result?.file.name,'test.png');assert.deepEqual(result?.data,Buffer.from([1,2,3]));});
 test('view preferences persist and older exports default to visible',async()=>{
   const {mutation,readState}=await import('../lib/store');
   assert.deepEqual((await readState()).preferences,{today:true,journal:true,future:true});
