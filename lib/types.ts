@@ -12,8 +12,8 @@ export type Card = {
 };
 export type Tag = {id:string; name:string; color:string; aliases:string[]; archived:boolean};
 export type Collection = {id:string; name:string};
-export type ViewPreferences = {today:boolean; journal:boolean; future:boolean};
-export const defaultViewPreferences:ViewPreferences = {today:true,journal:true,future:true};
+export type ViewPreferences = {today:boolean; journal:boolean; future:boolean; showCardTitles:boolean};
+export const defaultViewPreferences:ViewPreferences = {today:true,journal:true,future:true,showCardTitles:false};
 export type State = {cards:Card[]; tags:Tag[]; collections:Collection[]; boardTags:string[]; reflections:Record<string,string>; preferences:ViewPreferences; version:number};
 export type ParsedCapture = {title:string; kind:Kind; plannedDate:string|null; dueDate:string|null; time:string|null; reminder:string|null; tags:string[]; suggestedTags:string[]; priority:boolean; recurrence:Card['recurrence']; original:string; ambiguous:boolean; engine:'rules'|'model'};
 export const palette = ['#a23b72','#2c7a7b','#9a5b13','#6458a6','#327346','#b34f45'];

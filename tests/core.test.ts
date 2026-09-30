@@ -32,12 +32,12 @@ test('SQLite mutations merge tags without duplicating cards and reject stale edi
 test('SQLite attachment fallback saves and reads file bytes',async()=>{const {saveFile,readStoredFile}=await import('../lib/store');const id=crypto.randomUUID();await saveFile({id,name:'test.png',type:'image/png',size:3},Buffer.from([1,2,3]));const result=await readStoredFile(id);assert.equal(result?.file.name,'test.png');assert.deepEqual(result?.data,Buffer.from([1,2,3]));});
 test('view preferences persist and older exports default to visible',async()=>{
   const {mutation,readState}=await import('../lib/store');
-  assert.deepEqual((await readState()).preferences,{today:true,journal:true,future:true});
+  assert.deepEqual((await readState()).preferences,{today:true,journal:true,future:true,showCardTitles:false});
   await Promise.all([mutation({type:'preferences',patch:{today:false}}),mutation({type:'preferences',patch:{journal:false}}),mutation({type:'preferences',patch:{future:false}})]);
-  assert.deepEqual((await readState()).preferences,{today:false,journal:false,future:false});
+  assert.deepEqual((await readState()).preferences,{today:false,journal:false,future:false,showCardTitles:false});
   const {preferences,...legacy}=await readState();
   await mutation({type:'import',state:legacy});
-  assert.deepEqual((await readState()).preferences,{today:true,journal:true,future:true});
+  assert.deepEqual((await readState()).preferences,{today:true,journal:true,future:true,showCardTitles:false});
 });
 test('repeating completion produces one next occurrence even on duplicate saves',async()=>{
   const {mutation,readState}=await import('../lib/store');
